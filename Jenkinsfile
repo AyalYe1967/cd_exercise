@@ -11,10 +11,14 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
+                    echo "Running unit tests using Jenkins WORKSPACE: ${env.WORKSPACE}"
+                    
                     sh """
-                        docker run --rm -v \$(pwd):/app -w /app python:3.11-slim bash -c "
-                            echo 'Checking files in directory:'
+                        docker run --rm -v ${env.WORKSPACE}:/app -w /app python:3.11-slim bash -c "
+                            echo 'Checking files inside container:'
                             ls -la
+                            pip install --upgrade pip
+                            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
                             python -m unittest test_app.py
                         "
                     """
