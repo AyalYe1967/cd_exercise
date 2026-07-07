@@ -11,13 +11,10 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                    echo "Running unit tests in a temporary Python container..."
-                    
-                    // הרצת קונטיינר פייתון זמני שמריץ את ההתקנה והטסטים על התיקיה הנוכחית במערכת
                     sh """
                         docker run --rm -v \$(pwd):/app -w /app python:3.11-slim bash -c "
-                            pip install --upgrade pip
-                            pip install -r requirements.txt
+                            echo 'Checking files in directory:'
+                            ls -la
                             python -m unittest test_app.py
                         "
                     """
