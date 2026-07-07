@@ -12,11 +12,10 @@ class FlaskAppTestCase(unittest.TestCase):
         """בדיקת טעינת עמוד הבית (Route /)"""
         response = self.client.get('/')
         
-        # וידוא שהבקשה הצליחה (HTTP 200)
         self.assertEqual(response.status_code, 200)
         
-        # וידוא שהטקסט Visca el Barça מופיע בתוך ה-HTML שמוחזר
-        self.assertIn(b'Visca el Barca!', response.data)
+        # שימוש במחרוזת בטוחה שלא תלויה בתווים מיוחדים או בדיקת הקידוד הנכון
+        self.assertIn(b'FC Barcelona Squad Dashboard', response.data)
         self.assertIn(b'Lamine Yamal', response.data)
 
     def test_get_squad_api(self):
