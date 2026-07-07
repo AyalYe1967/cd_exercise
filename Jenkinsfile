@@ -4,38 +4,34 @@ pipeline {
     environment {
         IMAGE_NAME = 'my-flask-app'
         IMAGE_TAG  = "${env.BUILD_NUMBER}"
-        CONTAINER_NAME = "flask-test-${env.BUILD_NUMBER}"
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Run Unit Tests') {
             steps {
                 script {
-                    echo "Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}..."
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
+                    echo "Running unit tests..."
+                    sh "python3 -m unittest test_app.py"
                 }
             }
         }
 
-        stage('Run Unit Tests in Container') {
+        stage('Build & Deploy (Main / Specific Branch Only)') {
             steps {
                 script {
-                    echo "Running unit tests inside the built docker container..."
+                    // בדיקה האם אנחנו רצים על בראנץ' main (או בראנץ' ספציפי אחר שמותר לו לבנות דוקר)
+                    // env.BRANCH_NAME או env.GIT_BRANCH תלוי איך הגדרת את המשיכה מגיטהאב
+                    def currentBranch = env.BRANCH_NAME ?: env.GIT_BRANCH ?: "unknown"
                     
-                    sh "docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} python -m unittest test_app.py"
-                    
-                    echo "Unit tests inside container passed successfully!"
+                    // נקה את שם הבראנץ' אם הוא מגיע בצורה כמו origin/main
+                    if (currentBranch.contains('main')) {
+                        echo "Target branch is main. Building Docker image..."
+                        sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
+                    } else {
+                        echo "Current branch is '${currentBranch}', skipping Docker build."
+                    }
                 }
             }
-        }
-    }
-    
-    post {
-        success {
-            echo 'Pipeline and Tests completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed. Cleaning up if needed.'
         }
     }
 }
