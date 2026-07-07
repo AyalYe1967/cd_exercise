@@ -8,20 +8,13 @@ pipeline {
 
     stages {
         // שלב 1: הרצת טסטים בסביבת קונטיינר זמנית של פייתון (רצת תמיד ב-Push וב-PR)
-        stage('Run Unit Tests') {
+        stage('Run Unit Tests in Container') {
             steps {
                 script {
-                    echo "Running unit tests using Jenkins WORKSPACE: ${env.WORKSPACE}"
+                    echo "Running unit tests inside the built container..."
                     
-                    sh """
-                        docker run --rm -v ${env.WORKSPACE}:/app -w /app python:3.11-slim bash -c "
-                            echo 'Checking files inside container:'
-                            ls -la
-                            pip install --upgrade pip
-                            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-                            python -m unittest test_app.py
-                        "
-                    """
+                    // אנחנו מריצים קונטיינר מה-Image שנבנה ודורסים את ה-CMD כדי שיריץ את הטסטים
+                    sh "docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} python -m unittest test_app.py"
                 }
             }
         }
