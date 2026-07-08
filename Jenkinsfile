@@ -2,11 +2,11 @@ pipeline {
     agent any
     
     environment {
-        AWS_REGION     = 'us-east-1' 
-        AWS_ACC_ID     = '992382545251' 
+        AWS_REGION      = 'us-east-1' 
+        AWS_ACC_ID      = '992382545251' 
         REPOSITORY_NAME = 'a_y/cd'
-        IMAGE_TAG      = "v-${env.BUILD_NUMBER}"
-        REGISTRY_URL   = "${env.AWS_ACC_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
+        IMAGE_TAG       = "v-${env.BUILD_NUMBER}"
+        REGISTRY_URL    = "${env.AWS_ACC_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
     }
 
     stages {
@@ -31,28 +31,11 @@ pipeline {
         stage('Push to AWS ECR') {
             steps {
                 script {
-                    stage('Push to AWS ECR') {
-    steps {
-        script {
-                echo "Logging in to Amazon ECR..."
-            
-                withCredentials([usernamePassword(credentialsId: 'your-aws-credential-id', 
-                                                usernameVariable: 'AWS_ACCESS_KEY_ID', 
-                                                passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    
-                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL}"
-                
-                echo "Tagging image with ${IMAGE_TAG}..."
-                sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
-                sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
-
-                echo "Pushing image to ECR..."
-                sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
-                sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
-            }
-        }
-    }
-}
+                    echo "Logging in to Amazon ECR..."
+                    withCredentials([usernamePassword(credentialsId: 'your-aws-credential-id', 
+                                                      usernameVariable: 'AWS_ACCESS_KEY_ID', 
+                                                      passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        
                         sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL}"
                         
                         echo "Tagging image with ${IMAGE_TAG}..."
@@ -66,7 +49,6 @@ pipeline {
                 }
             }
         }
-}
 
         stage('Notify GitHub Success') {
             steps {
@@ -76,7 +58,7 @@ pipeline {
                 }
             }
         }
-    
+    }
     
     post {
         success {
