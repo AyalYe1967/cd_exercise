@@ -53,6 +53,38 @@ pipeline {
             }
         }
 
+        stage('Deploy to EC2') {
+            when {
+                expression { env.CHANGE_ID != null || env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master' }
+            }
+            steps {
+                script {
+                    echo "Deploying to EC2 server..."
+                    
+                    // התחברות לשרת באמצעות SSH בעזרת המפתח ששמרת בג'נקינס
+                    // תחליף את 'ec2-ssh-key' ב-ID של המפתח שלך, ואת 'ubuntu@YOUR_EC2_IP' ביוזר ובכתובת ה-IP של השרת שלך
+                    // (או משתני סביבה שמוגדרים אצלך)
+                    
+                    def ec2Host = '44.211.153.138' // כתובת ה-IP של ה-EC2 שלך
+                    def ec2User = 'ubuntu'             // שם המשתמש בשרת (למשל ubuntu, ec2-user וכו')
+
+                    // הרצת פקודות ה-Docker מרחוק דרך SSH
+                    // (מומלץ להשתמש ב-sshagent או sshCommand תלוי בפלאגין המותקן אצלך)
+                    sshagent(credentials: ['b7943e0f-cf0c-4a33-8d0f-eda0073045d8']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${ec2User}@${ec2Host} "\
+                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL} && \
+                                docker pull ${REGISTRY_URL}/${REPOSITORY_NAME}:latest && \
+                                docker stop my-running-app || true && \
+                                docker rm my-running-app || true && \
+                                docker run -d --name my-running-app -p 5000:5000 ${REGISTRY_URL}/${REPOSITORY_NAME}:latest \
+                            "
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Notify GitHub Success') {
             when {
                 expression { env.CHANGE_ID != null || env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master' }
