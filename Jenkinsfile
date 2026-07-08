@@ -38,7 +38,6 @@ pipeline {
             }
         }
 
-
         stage('Notify GitHub Success') {
             steps {
                 script {
@@ -59,10 +58,10 @@ pipeline {
             echo 'Pipeline completed successfully!'
         }
         failure {
-
+            // תוקן השימוש ב-repo ל-url הנכון
             step([
                 $class: 'GitHubCommitStatusSetter',
-                reposSource: [$class: 'ManuallyEnteredRepositorySource', repo: 'YOUR_GITHUB_USER/YOUR_REPO_NAME'],
+                reposSource: [$class: 'ManuallyEnteredRepositorySource', url: 'https://github.com/AyalYe1967/cd_exercise'],
                 commitShaSource: [$class: 'ManuallyEnteredShaSource', sha: env.GIT_COMMIT],
                 statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'FailureStatusResult', message: 'Build Failed!']]]
             ])
