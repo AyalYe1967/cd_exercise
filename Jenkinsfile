@@ -35,7 +35,7 @@ pipeline {
             steps {
                 script {
                     echo "Logging in to Amazon ECR..."
-                    withCredentials([usernamePassword(credentialsId: 'your-aws-credential-id', 
+                    withCredentials([usernamePassword(credentialsId: 'b6f4c88a-2853-45d6-8a37-eee2bfb73c51', 
                                                       usernameVariable: 'AWS_ACCESS_KEY_ID', 
                                                       passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                         
