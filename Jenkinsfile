@@ -43,17 +43,15 @@ pipeline {
             steps {
                 script {
                     echo "Notifying GitHub that the build and tests have passed..."
-                    
                     step([
                         $class: 'GitHubCommitStatusSetter',
-                        reposSource: [$class: 'ManuallyEnteredRepositorySource', repo: 'YOUR_GITHUB_USER/YOUR_REPO_NAME'],
+                        reposSource: [$class: 'ManuallyEnteredRepositorySource', url: 'https://github.com/AyalYe1967/cd_exercise'],
                         commitShaSource: [$class: 'ManuallyEnteredShaSource', sha: env.GIT_COMMIT],
                         statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'SuccessStatusResult', message: 'Build and Tests Passed!']]]
                     ])
                 }
             }
         }
-    }
     
     post {
         success {
