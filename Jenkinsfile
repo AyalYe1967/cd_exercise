@@ -29,10 +29,13 @@ pipeline {
         }
 
         stage('Push to AWS ECR') {
+            when {
+                expression { env.CHANGE_ID != null || env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master' }
+            }
             steps {
                 script {
                     echo "Logging in to Amazon ECR..."
-                    withCredentials([usernamePassword(credentialsId: 'b6f4c88a-2853-45d6-8a37-eee2bfb73c51', 
+                    withCredentials([usernamePassword(credentialsId: 'your-aws-credential-id', 
                                                       usernameVariable: 'AWS_ACCESS_KEY_ID', 
                                                       passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                         
@@ -51,6 +54,9 @@ pipeline {
         }
 
         stage('Notify GitHub Success') {
+            when {
+                expression { env.CHANGE_ID != null || env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master' }
+            }
             steps {
                 script {
                     echo "Notifying GitHub that the build and tests have passed..."
@@ -66,9 +72,11 @@ pipeline {
         }
         failure {
             script {
-                githubNotify status: 'FAILURE', description: 'Pipeline Failed!', context: 'cd_practise_multy'
+                if (env.CHANGE_ID != null) {
+                    githubNotify status: 'FAILURE', description: 'Pipeline Failed!', context: 'cd_practise_multy'
+                }
             }
-            echo 'Pipeline failed. Status sent to GitHub as FAILURE.'
+            echo 'Pipeline failed. Status sent to GitHub as FAILURE if applicable.'
         }
     }
 }
