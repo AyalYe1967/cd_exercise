@@ -2,8 +2,11 @@ pipeline {
     agent any
     
     environment {
-        IMAGE_NAME = 'my-flask-app'
-        IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        AWS_REGION     = 'us-east-1' 
+        AWS_ACC_ID     = '992382545251' 
+        REPOSITORY_NAME = 'a_y/cd'
+        IMAGE_TAG      = "v-${env.BUILD_NUMBER}"
+        REGISTRY_URL   = "${env.AWS_ACC_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
     }
 
     stages {
@@ -11,7 +14,7 @@ pipeline {
             steps {
                 script {
                     echo "Building temporary/latest Docker image for testing..."
-                    sh "docker build --no-cache -t ${IMAGE_NAME}:latest ."
+                    sh "docker build --no-cache -t ${REPOSITORY_NAME}:latest ."
                 }
             }
         }
@@ -20,19 +23,24 @@ pipeline {
             steps {
                 script {
                     echo "Running unit tests inside the container..."
-                    sh "docker run --rm ${IMAGE_NAME}:latest python -m unittest test_app.py"
+                    sh "docker run --rm ${REPOSITORY_NAME}:latest python -m unittest test_app.py"
                 }
             }
         }
 
-        stage('Final Build & Tag (PR to Main Only)') {
-            when {
-                expression { env.CHANGE_ID != null && env.CHANGE_TARGET == 'main' }
-            }
+        stage('Push to AWS ECR') {
             steps {
                 script {
-                    echo "Pull Request detected targeting 'main'. Tagging official image: ${IMAGE_NAME}:${IMAGE_TAG}..."
-                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${IMAGE_TAG}"
+                    echo "Logging in to Amazon ECR..."
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                    
+                    echo "Tagging image with ${IMAGE_TAG}..."
+                    sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
+                    sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
+
+                    echo "Pushing image to ECR..."
+                    sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
+                    sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
                 }
             }
         }
@@ -41,7 +49,7 @@ pipeline {
             steps {
                 script {
                     echo "Notifying GitHub that the build and tests have passed..."
-                    githubNotify status: 'SUCCESS', description: 'Build and Tests Passed!', context: 'cd_practise_multy'
+                    githubNotify status: 'SUCCESS', description: 'Build, Tests & ECR Push Passed!', context: 'cd_practise_multy'
                 }
             }
         }
@@ -53,7 +61,7 @@ pipeline {
         }
         failure {
             script {
-                githubNotify status: 'FAILURE', description: 'Build Failed!', context: 'cd_practise_multy'
+                githubNotify status: 'FAILURE', description: 'Pipeline Failed!', context: 'cd_practise_multy'
             }
             echo 'Pipeline failed. Status sent to GitHub as FAILURE.'
         }
