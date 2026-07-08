@@ -4,10 +4,10 @@ pipeline {
     environment {
         IMAGE_NAME = 'my-flask-app'
         IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        EC2_HOST   = 'YOUR_EC2_IP_OR_DNS'
     }
 
     stages {
-        // שלב 1: בניית הדוקר הראשונית (כדי שתהיה לנו סביבה להריץ עליה טסטים)
         stage('Build Initial Docker Image') {
             steps {
                 script {
@@ -17,7 +17,6 @@ pipeline {
             }
         }
 
-        // שלב 2: הרצת הטסטים מתוך הקונטיינר (רץ תמיד ב-Push וב-PR)
         stage('Run Unit Tests in Container') {
             steps {
                 script {
@@ -27,7 +26,6 @@ pipeline {
             }
         }
 
-        // שלב 3: תיוג והפקה סופית (רץ אך ורק ב-PR שמכוון ל-main)
         stage('Final Build & Tag (PR to Main Only)') {
             when {
                 expression { env.CHANGE_ID != null && env.CHANGE_TARGET == 'main' }
@@ -39,13 +37,36 @@ pipeline {
                 }
             }
         }
+
+
+        stage('Notify GitHub Success') {
+            steps {
+                script {
+                    echo "Notifying GitHub that the build and tests have passed..."
+                    
+                    step([
+                        $class: 'GitHubCommitStatusSetter',
+                        reposSource: [$class: 'ManuallyEnteredRepositorySource', repo: 'YOUR_GITHUB_USER/YOUR_REPO_NAME'],
+                        commitShaSource: [$class: 'ManuallyEnteredShaSource', sha: env.GIT_COMMIT],
+                        statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'SuccessStatusResult', message: 'Build and Tests Passed!']]]
+                    ])
+                }
+            }
+        }
     }
     
     post {
         success {
-            echo 'Pipeline completed successfully! Status sent to GitHub as SUCCESS.'
+            echo 'Pipeline completed successfully!'
         }
         failure {
+
+            step([
+                $class: 'GitHubCommitStatusSetter',
+                reposSource: [$class: 'ManuallyEnteredRepositorySource', repo: 'YOUR_GITHUB_USER/YOUR_REPO_NAME'],
+                commitShaSource: [$class: 'ManuallyEnteredShaSource', sha: env.GIT_COMMIT],
+                statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'FailureStatusResult', message: 'Build Failed!']]]
+            ])
             echo 'Pipeline failed. Status sent to GitHub as FAILURE.'
         }
     }

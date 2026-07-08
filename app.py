@@ -21,7 +21,7 @@ HOME_TEMPLATE = """
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-Y(135deg, #004d98, #a50044);
+            background: linear-gradient(135deg, #004d98, #a50044);
             color: #ffffff;
             margin: 0;
             padding: 40px;
@@ -69,6 +69,7 @@ HOME_TEMPLATE = """
             font-size: 1.3rem;
             font-weight: 600;
             margin: 10px 0 5px 0;
+            color: #edbb00; /* שונה לצבע הצהוב של בארסה, אפשר להחליף לכל קוד HEX שתרצה */
         }
         .position {
             font-size: 0.9rem;
