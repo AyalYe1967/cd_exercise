@@ -31,19 +31,42 @@ pipeline {
         stage('Push to AWS ECR') {
             steps {
                 script {
-                    echo "Logging in to Amazon ECR..."
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                    stage('Push to AWS ECR') {
+    steps {
+        script {
+                echo "Logging in to Amazon ECR..."
+            
+                withCredentials([usernamePassword(credentialsId: 'your-aws-credential-id', 
+                                                usernameVariable: 'AWS_ACCESS_KEY_ID', 
+                                                passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     
-                    echo "Tagging image with ${IMAGE_TAG}..."
-                    sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
-                    sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
+                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                
+                echo "Tagging image with ${IMAGE_TAG}..."
+                sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
+                sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
 
-                    echo "Pushing image to ECR..."
-                    sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
+                echo "Pushing image to ECR..."
+                sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
+                sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
+            }
+        }
+    }
+}
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                        
+                        echo "Tagging image with ${IMAGE_TAG}..."
+                        sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
+                        sh "docker tag ${REPOSITORY_NAME}:latest ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
+
+                        echo "Pushing image to ECR..."
+                        sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:${IMAGE_TAG}"
+                        sh "docker push ${REGISTRY_URL}/${REPOSITORY_NAME}:latest"
+                    }
                 }
             }
         }
+}
 
         stage('Notify GitHub Success') {
             steps {
